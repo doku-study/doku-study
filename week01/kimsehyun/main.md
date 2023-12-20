@@ -4,10 +4,8 @@
 - 즉 다시 말해서 어떤 실행 가능한 코드뿐만 아니라 그 코드를 실행하기 위한 모듈, 패키지, 가상환경들을 모두 합쳐놓은 것을 말한다.
 - 컨테이너의 가장 큰 특징은 독립(또는 고립, isolated)되어 있고 자기 충족적(self-contained)이라는 점이다. 그래서 스스로 기능한다는 의미에서 단위(unit)라는 말을 쓰는 것 같다.
 
-![컨테이너의 특성](kimsehyun/attachments/container1.png?raw=true)
-
 <p float="center">
-<img src="kimsehyun/attachments/container1.png?raw=true" width="75%" />
+<img src="attachments/container1.png?raw=true" width="75%" />
 </p>
 
 ### Reproducibility
@@ -50,10 +48,8 @@
 
 ## 컨테이너 기술
 
-![컨테이너 기술 개요도](kimsehyun/attachments/container_and_OS.png?raw=true)
-
 <p float="center">
-  <img src="kimsehyun/attachments/container_and_OS.png?raw=true" width="75%" />
+  <img src="attachments/container_and_OS.png?raw=true" width="50%" />
 </p>
 
 컨테이너는 사용자의 OS 위에서 작동한다.
@@ -61,10 +57,9 @@
 
 ## 가상 머신과 컨테이너의 비교
 
-![가상머신 vs. 컨테이너](kimsehyun/attachments/vm_container.png?raw=true)
 
 <p float="center">
-<img src="kimsehyun/attachments/vm_container.png?raw=true" width="75%" />
+<img src="attachments/vm_container.png?raw=true" width="50%" />
 </p>
 
 ### 도커는 가상 머신과 이 점에서 다르다
@@ -96,10 +91,8 @@ sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin 
 
 ## 도커 구성 요소
 
-![도커 구성 요소](kimsehyun/attachments/components_of_docker.png?raw=true)
-
 <p float="center">
-<img src="kimsehyun/attachments/components_of_docker.png?raw=true" width="75%" />
+<img src="attachments/components_of_docker.png?raw=true" width="40%" />
 </p>
 
 - Docker Engine: 도커 컨테이너가 사용자의 OS에 맞게 실행이 가능하도록 OS 레벨에서 지원하는 기술
