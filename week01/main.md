@@ -3,9 +3,9 @@
 - 즉 다시 말해서 어떤 실행 가능한 코드뿐만 아니라 그 코드를 실행하기 위한 모듈, 패키지, 가상환경들을 모두 합쳐놓은 것을 말한다.
 - 컨테이너의 가장 큰 특징은 독립(또는 고립, isolated)되어 있고 자기 충족적(self-contained)이라는 점이다. 그래서 스스로 기능한다는 의미에서 단위(unit)라는 말을 쓰는 것 같다.
 
-
-![[container1.png]]
-
+<p float="center">
+<img src="week01/attachments/container1.png?raw=true" width="75%" />
+</p>
 
 ### Reproducibility
 - 컨테이너 안에 담긴 코드는 누가 실행하든, 어떤 OS나 환경 안에서 실행하든 (이상적으로는?) 항상 동일한 실행 결과를 보장한다.
@@ -48,7 +48,9 @@
 
 ## 컨테이너 기술
 
-![[container_and_OS.png]]
+<p float="center">
+<img src="week01/attachments/container_and_OS.png?raw=true" width="75%" />
+</p>
 
 컨테이너는 사용자의 OS 위에서 작동한다.
 반면 가상 머신은 아예 별도의 OS를 하나씩 꾸려놓는 것이기 때문에 컨테이너는 훨씬 더 무거울 수밖에 없다.
@@ -56,7 +58,9 @@
 
 ## 가상 머신과 컨테이너의 비교
 
-![[vm_container.png]]
+<p float="center">
+<img src="week01/attachments/vm_container.png?raw=true" width="75%" />
+</p>
 
 ### 도커는 가상 머신과 이 점에서 다르다
 - 앱을 구동하기 위한 기기의 전체 환경을 구축하는 게 아니라 앱과 그것에 필요한 환경만 분리하여 구축
@@ -89,7 +93,9 @@ sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin 
 
 ## 도커 구성 요소
 
-![[components_of_docker.png]]
+<p float="center">
+<img src="week01/attachments/components_of_docker.png?raw=true" width="75%" />
+</p>
 
 - Docker Engine: 도커 컨테이너가 사용자의 OS에 맞게 실행이 가능하도록 OS 레벨에서 지원하는 기술
 - Docker Desktop: Docker Engine을 알아서 설치. Daemon & CLI이 실행 가능하도록 세팅
