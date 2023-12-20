@@ -162,13 +162,13 @@ clean:
 
 
 - 그 후 매크로로 등록할 키워드와 명령어를 입력해준다.
-    - all : `make all` 명령어를 통해 `all` 에 표기된 `clean` 과 `reporter` 를 실행시켜준다.
+    - all : `make all` 명령어를 통해 `all` 에 표기된 `clean` 과 `sample` 를 실행시켜준다.
     - $(BUILD_NUM_FILE) : 다른 키워드가 실행되기 전에 먼저 실행되는 명령어이다.
     - reporter : build 번호를 업데이트하며 go 프로젝트의 빌드 명령어를 수행한다.
         - reporter 에서 생성되는 파일은 배포를 용이하게 하기 위해 /docker 디렉터리에 복사해준다.
     - clean : 기존 build 했던 파일이 있는 디렉터리는 삭제한다.
 
 
-- `make`  키워드를 해당 프로젝트 위치에서 실행시키면 Makefile 로 실행되는 명령어에 대한 로그와 함께 `/bin/reporter`실행파일이 생성됨을 알 수 있다.
+- `make`  키워드를 해당 프로젝트 위치에서 실행시키면 Makefile 로 실행되는 명령어에 대한 로그와 함께 `/bin/sample`실행파일이 생성됨을 알 수 있다.
 
 
