@@ -3,27 +3,27 @@
 ## Docker에서의 컨테이너와 이미지
 
 > 🐳 Docker<br>
-> 애플리케이션을 포함하는 격리된 환경과 그 앱을 실행하는데 필요한 모든 것(환경, 도구)을 격리된 컨테이너 내부에 모두 포함하는 것<br>
+>
+> - 애플리케이션을 포함하는 격리된 환경과 그 앱을 실행하는데 필요한 모든 것(환경, 도구)을 격리된 컨테이너 내부에 모두 포함하는 것<br>
 
 > 🗂️ 이미지<br>
-
-    - 템플릿(코드와 애플리케이션), 컨테이너의 블루프린트<br>
-    - 모든 설정 명령과 코드, 코드를 실행하는데 필요한 도구를 포함하는 공유 가능한 패키지<br>
-    - 여러 컨테이너를 생성 가능<br>
+>
+> - 템플릿(코드와 애플리케이션), 컨테이너의 블루프린트<br>
+> - 모든 설정 명령과 코드, 코드를 실행하는데 필요한 도구를 포함하는 공유 가능한 패키지<br>
+> - 여러 컨테이너를 생성 가능<br>
 
 > 📦 컨테이너<br>
-
-    - 코드(unit of software)를 실행하는 역할<br>
-    - 이미지의 구체적인 실행 인스턴스
-    - 실행 애플리케이션<br>
-
-- Docker는 궁극적으로 컨테이너를 위한 것이다.
+>
+> - 코드(unit of software)를 실행하는 역할<br>
+> - 이미지의 구체적인 실행 인스턴스
+> - 실행 애플리케이션<br>
+> - Docker는 궁극적으로 컨테이너를 위한 것이다.
 
 ## 이미지의 사용 및 실행
 
 > 👩‍💻 Node에 의해 노출된 인터렉티브 쉘은 컨테이너에 의해 자동으로 우리에게 노출되지 않는다는 게 무슨 의미지?<br>
-
-> -> Node를 담은 컨테이너를 올렸음에도 Node를 바로 실행시킬 수 없다는 것을 의미
+>
+> → Node를 담은 컨테이너를 올렸음에도 Node를 바로 실행시킬 수 없다는 것을 의미
 
 - 컨테이너 내부에서 호스팅 머신으로 대화형 세션을 노출하고 싶을 때
 
@@ -66,6 +66,7 @@ CMD ["node", "server.js"]
 ## ⭐️ 이미지는 레이어 기반 아키텍쳐
 
 ![이미지 첨부](https://phoenixnap.com/kb/wp-content/uploads/2021/04/container-layers.png)
+
 (출처: [Docker Image vs Container: The Major Differences - phoenixNAP](https://phoenixnap.com/kb/docker-image-vs-container))
 
 - 이미지는 읽기 전용이고, 업데이트된 코드를 컨테이너에 반영하기 위해서는 이미지 다시 빌드
@@ -139,6 +140,7 @@ docker rm CONTAINER_NAME
 # 이미지 삭제
 docker rmi IMAGE_ID
 # ex) docker rmi ddd21fc18ed3
+
 # 사용하지 않는 이미지 삭제
 docker image prune
 ```
@@ -250,11 +252,9 @@ docker cp hopeful_wright:/test dummy
    - 이미지가 로컬에 있는 경우 최신 버전이 로컬 시스템이 있는지 체크하지 않는다
 
 > 👩‍💻 레지스트리와 레포지토리의 차이점?<br>
-
+>
 > - 레지스트리: Docker Hub, Google Container Registry, AWS Container Registry와 같이 Docker 이미지의 호스팅, 배포를 담당하는 서비스
-
+>
 > - 레포지토리: 동일한 이미지가 가진 다른 태그들의 모음
 
 (출처: [Difference between Docker registry and repository - StackOverflow](https://stackoverflow.com/questions/34004076/difference-between-docker-registry-and-repository))
-
-# 함께 이야기하고 싶은 점
