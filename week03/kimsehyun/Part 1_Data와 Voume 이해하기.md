@@ -258,3 +258,32 @@ docker run -d -p 3000:80 --name feedback-app -v feeback:/app/feedback -v "$(pwd)
 이때 규칙이 있다. 볼륨의 경로 간에 충돌이 발생하면 더 긴(하위) 디렉토리가 이긴다.
 그렇기 때문에 /app 디렉토리의 하위 디렉토리인 /app/node_modules 에 대응하는 볼륨이 덮어씌워지지 않고
 /app/node_modules에 npm이 설치되어 있기 때문에 의존성 패키지 에러가 발생하지 않게 된다.
+
+
+## 요약
+
+볼륨 또는 bind mount를 지정하는 법은 공통적으로 -v 옵션을 주는 것으로 시작한다.
+
+1. 익명 볼륨(anonymous volume)은 이름을 따로 지정하지 않고 마운트할 container 내부 경로만 써준다.
+
+```bash
+docker run -v /app/data ...
+```
+
+ 2. 이름이 지정된 볼륨(named volume)은 :(콜론)으로 앞에 볼륨의 이름을 덧붙여준다.
+
+```bash
+docker run -v data:/app/data ...
+```
+
+ 3. bind mount는 named volume과 형식은 동일하지만 이름 대신 로컬에 매핑할 경로를 지정해주면 된다.
+
+```bash
+docker run -v /path/in/local:/app/data ...
+```
+
+
+- 익명 볼륨은 --rm 옵션을 사용하지 않는 한 container를 중지(stop)하거나 재시작(start)해도 사라지지 않는다. 하지만 container를 삭제(remove)하면 익명 볼륨도 같이 사라진다. 그렇기 때문에 컨테이너 바깥에 데이터를 저장, 공유하는 데 익명 볼륨이 쓰일 순 없다.
+- "이름이 없는(익명의)" 볼륨이기 때문에 재사용할 수 없다. 같은 이미지여도 이미지에서 새로 컨테이너를 생성하면 같은 익명 볼륨을 재사용할 수 없다.
+
+
