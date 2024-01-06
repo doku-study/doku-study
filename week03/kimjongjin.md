@@ -182,4 +182,25 @@ docker build -t feedback-node:dev --build-arg DEFAULT_PORT=8000 .
         - 환경변수는 build 및 run 시 활용 
 
 ## 이야깃거리
-추후 업데이트 예정
+이번 챕터 분량과 관련해서 재밌게 봤던것은 `CertBot이미지를 사용한 사설인증서 생성하기`였습니다.
+
+최근에 Let's encrypt 사설인증서를 발급하기위해 Certbot이라는 도구를 사용해야할 일이 있었는데요.
+굳이 Certbot패키지를 설치하고 구성한뒤 사용하는것이 아니라, Certbot 도커이미지를 사용해 컨테이너를 생성하고,
+작동에 필요한 정보를 env로 실행시 전달하고, 결과를 bindMounts로 가져오는것이였습니다.
+
+진행과정에 대한 레퍼런스는 [링크](https://sungyong.medium.com/certbot%EA%B3%BC-route53-plugin%EC%9C%BC%EB%A1%9C-lets-encrypt-%EC%9D%B8%EC%A6%9D%EC%84%9C-%EA%B0%B1%EC%8B%A0-dd9f8889d89d) 를 참조해주시면 좋구요,
+진행과정은
+```
+docker run -it --rm --name certbot -v './etc/letsencrypt:/etc/letsencrypt' \
+-v './var/lib/letsencrypt:/var/lib/letsencrypt' --env AWS_ACCESS_KEY_ID --env AWS_SECRET_ACCESS_KEY \
+certbot/dns-route53 certonly --dns-route53 --dns-route53-propagation-seconds 30 \
+--agree-tos --email nasir17.dev@gmail.com -d gitlab.logonme.net
+```
+이 명령어를 실행해 AWS 키정보를 런타임 환경변수로 전달하고, 컨테이너내부에 생성된 인증서 키파일을 로컬의 bindmount한 경로로 받아올 수 있습니다.
+
+```
+Certificate is saved at: /etc/letsencrypt/live/gitlab.logonme.net/fullchain.pem
+Key is saved at:         /etc/letsencrypt/livegitlab.logonme.net/privkey.pem
+This certificate expires on 2024-04-04.
+```
+로컬 디렉토리에도 private key와 fullchain파일이 떨어지니 해당파일로 HTTPS 설정을 하면되겠지요.
