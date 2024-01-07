@@ -38,6 +38,8 @@ docker run -i -t <IMAGE>
 
 #### 중지되면 자동으로 삭제되는 컨테이너 실행하기
 
+- 이 때, 익명 볼륨을 생성했다면 해당 볼륨도 제거한다.
+
 ```
 docker run --rm <IMAGE>
 ```
@@ -63,3 +65,23 @@ docker cp <from> <to>
 - `<from>`, `<to>` 는 각각 컨테이너 혹은 호스트의 파일 경로.
   - 호스트 파일 경로는 prefix 없이 그냥 입력.
   - 컨테이너 파일 경로는 `<컨테이너명>:` 를 prefix 로 입력.
+
+## 볼륨
+
+### 볼륨 목록 조회
+
+```
+docker volume ls
+```
+
+### 볼륨 제거
+
+```
+docker volume rm <볼륨 이름>
+```
+
+- 사용하지 않는 모든 로컬 볼륨 제거
+
+```
+docker volume prune
+```
