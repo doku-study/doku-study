@@ -29,7 +29,6 @@
 - 익명 볼륨
   - 컨테이너가 작동할 때만 존재
   - 컨테이너 간 데이터 공유 불가
-  - 해당 데이터가 다른 모듈에 의해 덮여쓰여지는 것을 방지하는데 유용
   - Dockerfile에서 생성 가능
   ```bash
   docker run -v /app/data
@@ -157,6 +156,6 @@ docker run -d -p 3000:80 --rm --name feedback-app -v feedback:/app/feedback -v "
 
 # 함께 이야기하고 싶은 점
 
-> .gitignore, .dockerignore 와 같이 소스 컨트롤에 반영되지 않는 파일들을 어떻게 관리하시나요?<br>
-> 프로젝트, 현업 때도 Notion에서 관리했었는데, 이게 과연 올바른 방법인지 의문이 생기더라구요.<br>
+> .gitignore, .dockerignore로 소스 컨트롤에 반영되지 않는 파일들을 어떻게 관리하시나요?<br>
+> 프로젝트, 현업 때도 .env를 Notion에서 관리했었는데, 이게 과연 올바른 방법인지 의문이 생기더라구요.<br>
 > 다른 분들께선 환경 변수 데이터를 어떻게 관리하는지 궁금합니다!
