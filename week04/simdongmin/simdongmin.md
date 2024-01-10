@@ -103,10 +103,14 @@ docker network create [network name]
 
 도커 엔진은 자동적으로 기본 네트워크 3개를 포함합니다.
 
-**NETWORK ID     NAME                                       DRIVER    SCOPE**
-2bb78239a91a   bridge                                     bridge    local
-0e6bca8f89ba   host                                       host      local
-0d6043aa7139   none                                       null      local
+| NETWORK ID   | NAME   | DRIVER | SCOPE |
+| ------------ | ------ | ------ | ----- |
+| 2bb78239a91a | bridge | bridge | local |
+| 0e6bca8f89ba | host   | host   | local |
+| 0d6043aa7139 | none   | null   | local |
+
+
+​                                                
 
 네트워크 이름이 `bridge` 는 특수한 네트워크 입니다. 다른 네트워크를 설정하지 않는 한 도커는 항상 컨테이너를 이 네트워크에 띄우게 됩니다. 도커 이미지를 이용하여 컨테이너를 띄우게 되면 다음과 같은 모습이 됩니다.
 
