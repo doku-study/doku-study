@@ -49,11 +49,11 @@ docker run --name mongodb -v data:/data/db --rm -d --network goals-net -e MONGO_
     - mongoDB 도메인주소를 host.docker.internal -> mongo로 변경 동일한 네트워크상에서 컨테이너 이름을 읽을 수 있기 때문
     - docker run -name goals-backend --rm -d -p 80:80 --network goals-net goals-node(프론트와 통신하기위해 포트 남김)
 - 가이드에 따라 데이터베이스 환경변수 적용 : 도메인에 max:secret@mongodb, 마지막에 ?authSource-admin 추가
-    - 'mongodb://max:secret@mongodb:27017/course-goals?authSource-admin'
+    - 'mongodb://max:secret@mongodb:27017/course-goals?authSource=admin'
     - 그러나 mongoDB username과 password가 변경될 수 있음 -> Dockerfile에서 ENV 명령으로 변경시 유연하게 대처 : ENV MONGODB_USERNAME=root, ENV MONGODB_PASSWORD=secret
     ```
-    `mongodb://${ process.env.MONGODB_USERNAME}:${process.env.MONGODB_PASSWORD}
-    @mongodb:27017/course-goals?authSource-admin`
+    mongodb://${ process.env.MONGODB_USERNAME}:${process.env.MONGODB_PASSWORD}
+    @mongodb:27017/course-goals?authSource-admin
     ```
 - 실시간 소스 코드 업데이트
     - 실시간 소스코드가 업데이트 되도록 : -v User/docker=complete/backend/:/app
