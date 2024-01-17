@@ -84,7 +84,7 @@ volumes:
     - ex: docker run -it node npm init
 ### 유틸리티 컨테이너 구축
 - node 이미지를 만들고, 컨테이너를 올릴 때 바인드마운트로 미러링하여 로컬내부에 개발도구를 설치하지 않아도 로컬에서 작업할 수 있는 환경이 될 수 있음
-### 유틸리티 컨테이너 구축
+### ENTRYPOINT 활용
 - Dockerfile - ENTRYPOINT : defult 명령어, 유틸리티컨테이너의 명령어가 추가됨
 - Dockerfile - CMD : 명령어가 대체됨
     - docker run -it 바인드마운트 이미지이름 명령
