@@ -9,7 +9,7 @@
 
 ### compose 파일 (docker-compose.yaml)
 - 버전확인 : docs.docker.com/compose/compose-file
-```
+```docker
 version: "3.8"
 service:
     mongodb:
@@ -63,10 +63,10 @@ volumes:
 ```
 - detached와 --rm 옵셥은 defualt 값
 - 도커가 컴포즈 파일에 특정된 서비스에 대해 새환경을 자동으로 생성하고 모든 서비스를 즉시 네트워크에 추가
-- docker-compose up : 컴포즈 파일에서 찾을 수 있는 서비스 시작, 필요한 이미지 빌드, detach모드: -d 추가
-- docker-compose down : 모든 컨테이너 삭제 및 네트워크 종료, 볼륨 삭제: -v 추가
+- `docker-compose up` : 컴포즈 파일에서 찾을 수 있는 서비스 시작, 필요한 이미지 빌드, detach모드: -d 추가
+- `docker-compose down` : 모든 컨테이너 삭제 및 네트워크 종료, 볼륨 삭제: -v 추가
 - 한번 빌드된 이미지는 재빌드X, 코드가 변경될 때 docker-compose가 인지하여 빌드
-- 강제로 빌드하고 싶다면 'docker-compose build' 혹은 'docker-compose up --build'(docker-compose file에서 build만 해당))
+- 강제로 빌드하고 싶다면 'docker-compose build' 혹은 'docker-compose up --build'(docker-compose file에서 build만 해당)
 - 컨테이너 이름은 자동생성 (!= service이름)
 
 ### linux에 Docker Compose 설치
@@ -77,6 +77,30 @@ volumes:
 3. sudo ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose
 ~~~
 
+## 유틸리티 컨테이너
+### 컨테이너에서 명령을 실행하는 다양한 방법
+- `docker exec` : 실행중인 컨테이너에서 Dockerfile에 지정되어 있는 명령 외에 입력한 특정 명령을 실행
+- docker stop 후 컨테이너 다시 시작할때 이미지 이름 앞에 -it(인터렉티브 모드) 옵션을 주고 뒤에 명령을 입력하여 디폴트 명령을 오버라이드 할 수 있음 -> 명령 완료 후 컨테이너 종료
+    - ex: docker run -it node npm init
+### 유틸리티 컨테이너 구축
+- node 이미지를 만들고, 컨테이너를 올릴 때 바인드마운트로 미러링하여 로컬내부에 개발도구를 설치하지 않아도 로컬에서 작업할 수 있는 환경이 될 수 있음
+### 유틸리티 컨테이너 구축
+- Dockerfile - ENTRYPOINT : defult 명령어, 유틸리티컨테이너의 명령어가 추가됨
+- Dockerfile - CMD : 명령어가 대체됨
+    - docker run -it 바인드마운트 이미지이름 명령
+### docker compose 사용
+```docker
+version: "3.8"
+service:
+    npm:
+        build: ./
+        stdin_open: true # 입력이 필요한 명령의 경우 입력받을 수 있음
+        tty: true # 입력이 필요한 명령의 경우 입력받을 수 있음
+        volumes:
+            - ./:/app
+```
+- `docker-compose run --rm npm init`
 
 
 # 함께 이야기하고 싶은 점, 느낀점
+
