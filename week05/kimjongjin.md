@@ -121,8 +121,8 @@ frontend 서비스 구성하기
 ```
 ## 이미지 빌드 & 컨테이너 이름 이해하기
 docker-compose up --help > 사용할 수 있는 옵션 조회하기
-- --build > 강제리빌드
-docker-compose build > docker-compose 경로내에 커스텀 이미지 빌드경로가 있을경우
+- docker-compose up --build > 강제리빌드
+- docker-compose build > docker-compose 경로내에 커스텀 이미지 빌드경로가 있을경우
 
 
 컨테이너 이름   
@@ -207,15 +207,15 @@ So that we have a more restricted utility container
 where we can't do everything.
 Also to protect ourselves,
 so that I don't accidentally run some command
-in the container, which deletes everything.
+in the container, which deletes everything. 
 And then because of the bind mount,
 it starts deleting content on my host machine as well.
 So for this reason, as well, it might be interesting
 to restrict the commands we can run.
 ```
-이말이 무슨말인지 잘 이해가 안가네요.
-바인드 마운트되어있어서 컨테이너내에서 삭제하는 명령어를 내리면, 호스트머신에서도 지워지는데..?
-계속 컨테이너와 연결된 상태가 아니라 주어진 명령어만 실행하고 바로 종료되어 별도오작동을 막는다는 의미?
+이말이 무슨말인지 잘 이해가 안가네요.     
+바인드 마운트되어있어서 컨테이너내에서 삭제하는 명령어를 내리면, 호스트머신에서도 지워지는데..?   
+계속 컨테이너와 연결된 상태가 아니라 주어진 명령어만 실행하고 바로 종료되어 별도오작동을 막는다는 의미?   
 
 ENTRYPOINT
 - CMD와 유사하게 컨테이너 기동시 실행될 명렁어를 정의
@@ -263,6 +263,14 @@ services:
     - 도커를 통해 얼마나 간편히 구성할 수 있는지
 
 ## 이야깃거리
+몇가지 유용한 도커컴포즈 커맨드들
+- docker-compose -f [파일명] up
+  - 주어진 파일명의 docker-compose.yaml 실행
+  - 작업하다보면 얘도 도커컴포즈 쟤도 도커컴포즈라서 헷깔립니다. 아니면 같은 디렉토리에서 다른 환경의 컴포즈를 실행하고싶을수도있구요.
+  - 위의 명령어로 가능합니다. 순서 중요) docker-compose --help 해야 보이고, docker-compose up -f [파일명]은 작동하지 않습니다
+- docker-compose ps
+  - docker-compose 로 실행된 컨테이너들 상황 보기
+
 Docker Compose를 통한 패키지 설치 및 운영
 - 일반적으로 리눅스나 맥에서 패키지설치할때는 yum/apt/brew처럼 바이너리를 직접받고 구성하기도하지만
 - 요즘 오픈소스 프로젝트들 설치 옵션으로 도커(컴포즈)도 제공하기도 합니다
