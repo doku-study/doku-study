@@ -128,4 +128,115 @@ docker-compose up --build
 docker-compose build
 ```
 
+## 유틸리티 컨테이너
+
+- 유틸리티 컨테이너는 공식적인 용어는 아니다
+- 특정 환경(NodeJS, PHP…)만 포함하는 컨테이너
+  - 애플리케이션이 아니라 특정 작업을 실행한다
+- 시작되는 앱이 존재하지 않고 대신 특정 명령을 실행하는데 사용할 수 있는 환경만이 존재한다
+
+## 컨테이너에서 명령을 실행하는 방법
+
+```bash
+# Dockerfile에 지정되어 있는 명령 외에 입력된 특정 명령을 실행
+docker exec CONTAINER_NAME COMMAND
+ex)
+docker exec -it upbeat_williams npm init
+```
+
+- 메인 프로세스를 중단하지 않고 컨테이너 내부에 작성된 로그 파일을 읽는데 유용하다
+
+```bash
+# default command override
+docker run -it IMAGE_NAME COMMAND
+ex)
+docker run -it node npm init
+```
+
+> `docker exec`와 `docker run`의 차이?<br> > `docker run`은 이미지에서 커맨드를 읽고 실행하면서 컨테이너를 생성 및 실행한다. 반대로 `docker exec`는 컨테이너 내부에서 실행된다. 그래서 해당 커맨드를 실행하기 위해서는 컨테이너가 먼저 실행되고 있어야 한다.<br> > [출처: What is Difference Between Docker Run and Docker Exec Command - linuxhint](https://linuxhint.com/difference-between-docker-run-and-docker-exec-command/)
+
+## 실습) 유틸리티 컨테이너 구축
+
+```docker
+FROM node:14-alpine
+
+WORKDIR /app
+```
+
+```bash
+docker build -t node-util .
+docker run -it -v "$(pwd)":/app node-util npm init
+```
+
+> 👩‍💻 지금까지 배워서 당연한 거지만 커맨드 실행 후 package.json 생겼을 때 깜짝 놀랐다…
+
+### 기본 prefix 명령어 추가하기
+
+- docker run 뒤에 이어지는 명령어들이 ENTRYPOINT 뒤에 추가된다
+
+  ```docker
+  FROM node:14-alpine
+
+  WORKDIR /app
+
+  ENTRYPOINT [ "npm" ]
+  ```
+
+  ```bash
+  docker run -it -v "$(pwd)":/app my-npm init
+  ```
+
+  ```docker
+  docker run -it -v "$(pwd)":/app my-npm install express --save
+  ```
+
+  `--save` npm install 명령이 이 프로젝트에 대한 종속성으로 들어가게 하는 플래그
+
+### `--save`?
+
+> 지금까지 `--save-dev` 옵션은 써봤지만, `--save`는 처음 써봐서 무슨 용도일까 싶어서 찾아보았다.
+
+> npm 5.0.0 전까지는 package를 설치할 때 node_modules 밑으로 설치됐다. 그래서 의존성을 추가하기 위해서 `--save` 옵션을 써야했던 것이다. 그런데 npm 5.0.0 이후로는 default로 `--save` 옵션이 들어가기 때문에 더 이상 입력할 필요가 없는 것이다.
+
+> `--save-dev`?<br>
+> `devDependencies`에만 추가하기 위한 옵션이다. 즉, 개발 단게에서만 쓰이는 package인 경우 설치할 때 해당 옵션을 주는 것이다. 대표적으로 코드 컨벤션 규칙과 관련한 `eslint`, 이것과 관련된 플러그인이 `devDependencies`에 들어간다.
+
+[참고: What is the --save option for npm install? - Stackoverflow](https://stackoverflow.com/questions/19578796/what-is-the-save-option-for-npm-install)
+
+### 에러
+
+> 🧑‍💻 미러링된 파일 삭제할 때마다 에러가 뜬다!
+
+![image](https://github.com/doku-study/doku-study/assets/92101831/adf4e9fc-3a43-4952-97ce-2f511f59f18f)
+![image](https://github.com/doku-study/doku-study/assets/92101831/16bb2cf6-38ae-42ca-a045-34cfc2b65147)
+
+> 아니, 재현이 안된다...! 분명히 수업 들을 때는 계속 에러 메시지가 떴는데 찾아보려니 이젠 안 뜬다...
+
+---
+
+### Docker-compose 작성
+
+```yaml
+version: "3.8"
+services:
+	npm:
+		build: ./
+		stdin_open: true
+		tty: true
+		volumes:
+			- ./:/app
+```
+
+```bash
+# yaml에 여러 서비스가 있을 때 서비스 이름으로 단일 서비스 실행 가능
+docker-compose run SERVICE_NAME
+ex)
+docker-compose run npm init
+
+# 컨테이너 종료 시 자동 삭제 희망할 때
+docker-compose run --rm npm init
+```
+
 # 함께 이야기하고 싶은 점
+
+> linux 한정 사용자 권한 문제가 발생하는데, 혹시 비 linux 사용자 분들도 해당 에러를 유심히 보셨나요...? 과연 어느 범위까지 커버하면서 공부해야하는 건지 고민되네요.
