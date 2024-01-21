@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  server:
+    # image: 'nginx:stable-alpine'
+    build:
+      context: .
+      dockerfile: dockerfiles/nginx.dockerfile
+    ports:
+      - '8000:80'
+    volumes:
+      - ./src:/var/www/html # php파일이 서버에 노출되어야함. 바인드마운트
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on: # 의존성 설정
+      - php
+      - mysql
+  php:
+    build:
+      # docker hub 이미지를 기반으로 커스텀 이미지 생성위해 dockerfile 작성
+      # Dockerfile이라고 지정되지 않았기 때문에 세부적인 구성 필요
+      context: .
+      dockerfile: dockerfiles/php.dockerfile 
+    volumes:
+      - ./src:/var/www/html:delegated # :delegated 추가 -> 데이터 기록시 batch로처리, 성능향상
+  mysql:
+    image: mysql:5.7
+    env_file:
+      - ./env/mysql.env # 환경변수 설정 파일
+  
+  # 유틸리티컨테이너 -> 단일컨테이너로 실행하는게 일반적
+  # composer: PHP의 의존성 관리도구. 필요한 확장 기능을 쉽게 설치해주는 기능 제공, 프로젝트에서 필요한 확장 기능을 통합해서 관리.
+  composer:
+    build:
+      # 커스텀 dockerfile
+      context: ./dockerfiles
+      dockerfile: composer.dockerfile
+    volumes:
+      # 소스폴더를 내부 폴더에 바인딩
+      - ./src:/var/www/html
+  artisan: # php로 빌드된 laravel 명령
+    build:
+      context: .
+      dockerfile: dockerfiles/php.dockerfile
+    volumes:
+      - ./src:/var/www/html
+    # artisan 자체명령 필요. Dockerfile에 entrypoint가 없는 경우 오버라이드하거나 추가가능
+    # artisan: php파일이지만 이를 실행하면 많은 작업을 실행할 수 있는 유틸리티 프로그램 실행. laravel 프레임워크의 일부
+    entrypoint: ['php', '/var/www/html/artisan']
+  npm:
+    image: node:14
+    working_dir: /var/www/html
+    entrypoint: ['npm']
+    volumes:
+      - ./src:/var/www/html
