@@ -237,7 +237,7 @@ volumes:
 
 up 할 때 이미지 리빌드 강제 : `docker-compose up --build`
 
-이미지 빌드만 하고 컨테이너는 시작하지 않음 : `docker-compose up build`
+이미지 빌드만 하고 컨테이너는 시작하지 않음 : `docker-compose build`
 
 compose detached 모드로 시작 : `docker-compose up -d`
 
