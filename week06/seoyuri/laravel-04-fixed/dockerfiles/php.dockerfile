@@ -4,7 +4,7 @@ WORKDIR /var/www/html # 웹서버 표준 폴더
  
 COPY src .
  
-RUN docker-php-ext-install pdo pdo_mysql  # 부가 종속성을 설치하는데 사용할 수 있는 도구
+RUN docker-php-ext-install pdo pdo_mysql
  
 RUN addgroup -g 1000 laravel && adduser -G laravel -g laravel -s /bin/sh -D laravel
 
