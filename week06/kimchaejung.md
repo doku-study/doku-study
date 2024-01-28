@@ -302,13 +302,12 @@ COPY src .
 `docker-compose.yaml`
 
 ```yaml
-
 services:
   server:
     # image: "nginx:stable-alpine"
-		build:
-			context: .
-			dockerfile: dockerfiles/nginx.dockerfile
+    build:
+      context: .
+      dockerfile: dockerfiles/nginx.dockerfile
     ports:
       - "8000:80"
     # volumes:
@@ -317,7 +316,6 @@ services:
     depends_on:
       - php
       - mysql
-
 ```
 
 # 함께 이야기하고 싶은 점
