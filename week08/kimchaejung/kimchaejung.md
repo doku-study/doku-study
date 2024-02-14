@@ -112,7 +112,7 @@ docker push blcklamb/goals-node
     - mongodb 컨테이너를 다른 솔루션으로 대체
     - 또는 현재 실행 중인 태스크를 수동으로 중지하여 제거
 
-![지금까지 실행했을 때의 아키텍쳐](./previous_architecture.png)
+![지금까지 실행했을 때의 아키텍쳐](01-node-EFS-architecture.png)
 
 ## 프로덕션에서 DB를 사용하는 경우 궁극적으로 해결해야 할 것들
 
@@ -167,15 +167,17 @@ ex. AWS RDS, MongoDB Atlas
 - Update Service
   - [ ] EFS 볼륨과 관련된 것들 제거
 
+![지금까지 실행했을 때의 아키텍쳐](02-node-atlas-architecture.png)
+
 ## React 컨테이너 배포 시 문제가 되는 지점
 
 - React의 경우 프로덕션에서 서버를 실행시키지 않아 nodeJS처럼 바로 배포되지 않는다
   `npm start` 는 실행 중인 서버를 제공하지만 프로덕션에는 적합하지 않는다
 - 따라서 프로덕션 단계에서는 빌드가 필요하고, `npm run build` 는 코드 컴파일 및 최적화를 수행하고 변환 및 최적화된 파일을 내보내는 역할을 한다. 여기서 웹 서버를 추가하여 서비스를 제공할 수 있다
 
-## "빌드 전용" 컨테이너 만들기
+## 빌드 전용 컨테이너 만들기
 
-- Dockerfile.prod
+- `Dockerfile.prod`
 
 ```docker
 FROM node:14-alpine
@@ -189,4 +191,117 @@ RUN npm install
 COPY . .
 
 CMD ["npm", "run", "build"]
+```
+
+## 멀티 스테이지 빌드
+
+- `Dockerfile.prod`
+
+```docker
+FROM node:14-alpine as custom-build
+
+WORKDIR /app
+
+COPY package.json
+
+RUN npm install
+
+COPY . .
+
+RUN npm run build
+
+# 모든 FROM 명령은 새 스테이지를 만든다.
+FROM nginx:stable-alpine
+
+# /app/build를 /usr/share/nginx/html에 복사한다
+COPY --from=custom-build /app/build /usr/share/nginx/html
+
+EXPOSE 80
+
+CMD ["nginx", "-g", "daemon off;"]
+```
+
+- [nginx 설정에 대한 참고: nginx - Official Image | Docker Hub](https://hub.docker.com/_/nginx)
+
+- ReactJS에서 실행되는 코드는 브라우저에서 실행되는 코드에 해당된다. `localhost`는 태스크나 컨테이너 또는 ECS 관리형 서버가 아닌 로컬 머신을 참조하기 때문에 `localhost`로 API를 호출하는 것은 옳지 않다.
+- API_URL은 배포하는 방법에 따라서 정하는 방식이 달라진다
+
+  - 현재는 node REST API로 동일한 태스크에 이를 배포한다. 이는 궁극적으로 동일한 URL을 통해 연결할 수 있음을 의미한다.
+  - `http://localhost/goals/` → `/goals/`
+  - 다른 서버에서 이를 호스팅하려 한다면 여기에 그 서버의 실제 도메인을 기입하면 된다
+
+- 이미지 빌드 및 docker-hub 푸시
+
+```bash
+docker build -f frontend/Dockerfile.prod -t blcklamb/goals-react ./frontend
+docker push blcklamb/goals-react
+```
+
+## 스탠드얼론 프론트엔드 앱 배포하기
+
+- Add Container
+  - [ ] container name: goals-frontend
+  - STARTUP DEPENDENCY ORDERING
+    - [ ] container name: goals-backend
+    - [ ] condition: SUCCESS
+- 동일한 태스크에서 같은 포트 80을 바라보고 있는 것을 불가능하므로 현재 백엔드 컨테이너, 프론트엔드 컨테이너의 포트를 수정해야한다
+- 동일한 호스트에서 두 개 이상의 웹 서버를 가질 수 없다
+  - 현재 Node 백엔드는 포트 80에서 수신 대기하는 자체 웹 서버를 가동한다 + nginx 프론트엔드도 마찬가지다
+  - → ECS에 새로운 태스크 정의를 만든다
+    - Create new Task Definition
+      - [ ] Task Definition Name: goals-react
+      - [ ] Requires Compatibilities: FARGATE
+      - [ ] Task Role: ecsTaskExecutionRole(백엔드에 사용한 것과 동일한 태스크 역할 사용)
+      - Task Size에 최소한의 CPU와 메모리 할당
+      - Add Container
+        - [ ] container-name: goals/react
+        - [ ] images: blcklamb/goals-react
+        - [ ] port mapping: 80
+- 서로 다른 태스크에서 프론트엔드, 백엔드가 작동하므로 API_URL을 변경해야한다
+  ```jsx
+  const backendUrl = process.env.NODE_ENV === 'development' ? 'http://localhost': `${backend loadbalancer DNS name}`
+  ```
+  > 👩‍💻 해당 URL은 왜 환경 변수로 관리하지 않지?
+- 브라우저에서 프론트엔드 애플리케이션으로 접속하기 위한 DNS 생성
+
+  - Application Load Balancer
+    - [ ] name: `goal-react-lb`
+    - AZ
+      - [ ] VPC: 다른 로드 밸런서와 동일한 VPC
+      - (해당 보안 그룹은 들어오는 트래픽에 대해 포트80을 연다)
+    - Target Group
+      - [ ] name: `react-tg`
+      - [ ] target type: IP
+    - health checks
+      - [ ] path: /
+  - 로드밸런서 설정으로 가서 DNS name을 찾는다.
+
+- 코드 변경 후 재빌드, 푸시
+
+```bash
+docker build -f frontend/Dockerfile.prod -t blcklamb/goals-react ./frontend
+docker push blcklamb/goals-react
+```
+
+- Create Service
+  - [ ] Launch type: FARGATE
+  - [ ] cluster: `goals-app`
+  - [ ] service name: `goals-react`
+  - [ ] number of tasks: 1
+  - [ ] deployment type: rolling update
+  - subnets
+    - [ ] 클러스터가 제공하는 이 VPC에 두 개의 서브넷을 추가
+  - configure security groups
+    - [ ] 기존 보안 그룹 사용
+    - 이미 포트 80을 노출하고 있음
+  - [ ] auto-assign public IP: ENABLED
+  - [ ] load balancer name: `goals-react`
+    - [ ] target group name: `react-tg`
+
+![지금까지 실행했을 때의 아키텍쳐](03-final-architecture.png)
+
+## 원하는 스테이지만 빌드하기
+
+```bash
+docker build --target build(as로 명시한 state 이름) -f frontend/Dockerfile.prod ./frontend
 ```
