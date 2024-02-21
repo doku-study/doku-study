@@ -74,7 +74,8 @@
 | 9주차       | Docker & 컨테이너 - 요약                                    |
 | 9주차       | Kubernetes 시작하기                                         |
 | 10주차      | 실전 Kubernetes - 핵심 개념 자세히 알아보기                 |
-| 11주차      | Kubernetes로 데이터 & 볼륨 관리하기                         |
-| 12주차      | Kubernetes 네트워킹                                         |
-| 13주차      | Kubernetes - 배포 (AWS EKS)                                 |
-| 13주차      | 마무리 정리 & 다음 단계                                     |
+| 11주차      | 실전 Kubernetes - 핵심 개념 자세히 알아보기                 |
+| 12주차      | Kubernetes로 데이터 & 볼륨 관리하기                         |
+| 13주차      | Kubernetes 네트워킹                                         |
+| 14주차      | Kubernetes - 배포 (AWS EKS)                                 |
+| 15주차      | 마무리 정리 & 다음 단계                                     |
