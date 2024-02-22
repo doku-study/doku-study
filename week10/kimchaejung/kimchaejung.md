@@ -54,6 +54,8 @@ sysctl -a | grep -E --color 'machdep.cpu.features|VMX'
 
 > m1에서 해당 명령어가 안 먹어서 pass...
 
+![](01_m1_command_not_working.png)
+
 2. kubectl 설치
 
    [참고. Install Tools](https://kubernetes.io/docs/tasks/tools/#install-with-homebrew-on-macos)
@@ -71,6 +73,9 @@ kubectl version --client
 3. 컨테이너 또는 가상 머신 매니저 설치
 
 > m1에서 virtualBox, hyperkit도 설치가 안돼서 pass,
+
+![](02_m1_hyperkit_not_working.png)
+
 > docker가 설치되어 있어서 docker로 하기로 결정
 
 4. minikube 설치
@@ -93,6 +98,8 @@ minikube start --driver=docker
 minikube status
 minikube dashboard
 ```
+
+![](03_kubernetes_start.png)
 
 ## kubernetes 객체
 
@@ -201,6 +208,8 @@ minikube dashboard
 
   - 쿠버네티스 클러스터에서 알 수 없는 로컬 이미지이기 때문에 pull error가 뜨는 것
 
+  ![](./04_image_pull_error.png)
+
   ```bash
   kubectl delete deployment first-app
   docker tag kub-first-app blcklamb/kub-first-app
@@ -242,6 +251,12 @@ minikube service first-app
 ```
 
 > 강사님이랑은 화면이 다르다, 테이블이 두 개가 나옴...!
+
+![](./05_double_table.png)
+
+## 컨테이너 자동 재시작
+
+![](./06_container_restart.png)
 
 ## 컨테이너 스케일링
 
@@ -294,6 +309,8 @@ kubectl rollout undo deployment/first-app --to-revision=1
 kubectl delete service first-app
 kubectl delete deployment first-app
 ```
+
+![](./07_deployment_rollback.png)
 
 ## 선언적 접근 방식
 
