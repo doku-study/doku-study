@@ -123,26 +123,98 @@ ECS Task에서 mongo 컨테이너와 EFS 제거 후 업데이트된 백엔드 �
 
 사용자가 웹에서 상호작용 할 수 있도록 Fronted React 컨테이너를 추가하여 배포 예정
 
-
 ## 일반적인 문제 이해하기
+빌드 단계의 필요성
+- 개발과 운영 설정의 차이가 있는 경우) React와 같이 JavaScript로 작성된, 브라우저에서 실행되는 코드
+  - React에서는 HTML이 혼합된 javascript파일 존재 > JSX 
+  - 백그라운드에서 실행되는 일부 스크립트를 통해 컴파일되어 브라우저에서 실행되는 코드
+  - npm start시 컴파일되어 브라우저에 적절하게 변환되어 실행
+  - 해당 컴파일 과정은 무거워서 운영환경에서 하기엔 적절하지 않음
+  - start 명령대신 build 명령을 사용해서 코드컴파일 및 최적화 수행 > 결과물 내보내기
+    - start: 컴파일 및 최적화 후 실행, 자체 서버 가짐, 무거움
+    - build: 컴파일 및 최적화만, 자체서버 없음
 
 ## "빌드 전용" 컨테이너 만들기
+운영환경을 위한 Dockerfile.prod 별도의 도커파일 추가    
+기본적인 내용은 동일하지만, 별도 포트를 노출하지않고 npm start 대신 npm run build 수행
 
 ## 멀티 스테이지 빌드 소개
+멀티 스테이지 빌드를 사용하여, stage라고 부르는 여러 빌드/설정 단계 정의 가능     
+
+첫번째 빌드 단계 
+- 종속성 설치 및 소스코드를 가져와, 완성된 소스코드 빌드
+- node를 사용하여 빌드하지만, 빌드 이후에 node는 필요하지 않다
+```
+FROM node:14-alpine as build
+
+WORKDIR /app
+
+COPY package.json .
+
+RUN npm install
+
+COPY . .
+
+RUN npm run build
+```
+
+두번째 빌드 단계
+- 실행을 위해 nginx만 사용
+- 첫단계의 빌드 결과물을 --from 옵션을 사용하여 가져옴
+```
+FROM nginx:stable-alpine
+
+COPY --from=build /app/build /usr/share/nginx/html
+
+EXPOSE 80
+
+CMD ["nginx", "-g", "daemon off;"]
+```
 
 ## 멀티 스테이지 이미지 구축
+별도 환경에서 실행하기 위한 소스코드의 변경
+- 로컬머신에서는 URL을 localhost를 사용하여 요청을 보냈음
+- ECS와 같은 별도 환경에서는 같은 머신 보장X > 디폴트경로로 수정 / 이후 변수화도 가능
+- `docker build -f frontend/Dockerfile.prod -t nasir17/goals-react ./frontend`
+- `docker push nasir17/goals-react`
 
 ## 스탠드얼론 프론트엔드 앱 배포하기
+배포를 위해 기존 goals 태스크에 컨테이너 추가한 새 개정판 생성
+- 기존 태스크에서 새 개정판 생성이후, 컨테이너 추가 클릭(컨테이너-2 생성)
+- goals-frontend로 컨테이너 이름 설정 / `nasir17/goals-react` 컨테이너 URI 추가
+- 80 포트매핑 설정
+- backend 컨테이너가 먼저 생성되도록 시작 종속성 정렬 설정
+  - goals-backend 설정 후 success 조건 설정
+  - 에러대응) 필수컨테이너를 백엔드에서 프론트엔드컨테이너로 변경
+- 하나의 태스크 내에서 같은 포트(80)을 여러 컨테이너가 동시 사용 불가
+  - 지금 구조에서 프론트/백 두개를 하나의 컨테이너로 병합이 이상적
+  - 별도 태스크로 분리하여 적용
+- 새 개정판 생성 취소
 
-## Development vs Production: 차이점
+goals-react 태스크 정의 생성
+- goals-react 태스크 정의 이름 설정
+- goals-react 컨테이너 이름 / `nasir17/goals-react` 컨테이너 URI 추가
+- 80 포트매핑(디폴트)
+- 하지만 별도 task로 분리되었기 때문에 백엔드 찾아갈 수 있도록 소스코드에 URL 추가 필요
+- 태스크 생성 취소
 
-## 멀티 스테이지 빌드 Target이해하기
+frontend 소스코드 변경 
+- App.js L86 backendUrl 상수 추가
+- App.js L7 backendUrl 상수 설정에 개발시 localhost / ECS시 로드밸런서 경로 추가
+- EC2 콘솔에서 로드밸런서 생성
+  - goals-react-lb 이름설정
+  - ecs와 같은 네트워크(VPC/서브넷/보안그룹 설정)
+  - react-tg 타겟그룹 생성, IP유형, 생성단계에서 대상은 추가X
+  - 아니근데 이건 프론트용이고..
+- 기존의 백엔드 로드밸런서(ecs-lb)의 DNS를 추가
 
-## AWS를 넘어서
-
-## 모듈 요약
-
-## 모듈 리소스
+frontend 컨테이너 배포
+- 재빌드/docker push
+- 기존 goals-app 클러스터의 goals-react 서비스 생성
+  - goals-react 태스크 정의 선택
+  - goals-react 서비스 이름 설정
+  - 기존 goals-react-lb와 연결
+- 생성완료 이후 goals-react-lb의 DNS로 접근하여 화면 확인
 
 ## 이야깃거리
 AWS 이야기잠깐
@@ -151,3 +223,128 @@ Amazon Elastic Container Service
 AWS Fargate     
 
 언제 Amazon이고 언제 AWS?
+
+### taskdefinition(JSON)
+실습시 업데이트된 AWS UI와의 괴리는 문제가 있음   
+태스크정의는 JSON으로 뺄 수 있고, JSON으로 생성할 수 있어서 백업차 빼둠   
+다만 IAM Role(번호계정ID), 보안그룹명(실습이랑 조금다르게함)로 인해 바로 적용은 어려움
+- backend(goals)
+```
+{
+    "family": "goals",
+    "containerDefinitions": [
+        {
+            "name": "goals-backend",
+            "image": "nasir17/goals-node",
+            "cpu": 0,
+            "portMappings": [
+                {
+                    "name": "goals-backend-80-tcp",
+                    "containerPort": 80,
+                    "hostPort": 80,
+                    "protocol": "tcp",
+                    "appProtocol": "http"
+                }
+            ],
+            "essential": true,
+            "command": [
+                "node",
+                "app.js"
+            ],
+            "environment": [
+                {
+                    "name": "MONGODB_DATABASE",
+                    "value": "goals"
+                },
+                {
+                    "name": "MONGODB_PASSWORD",
+                    "value": "admin123"
+                },
+                {
+                    "name": "MONGODB_USERNAME",
+                    "value": "nasir17dev"
+                },
+                {
+                    "name": "MONGODB_URL",
+                    "value": "cluster0.d생략4.mongodb.net"
+                }
+            ],
+            "environmentFiles": [],
+            "mountPoints": [],
+            "volumesFrom": [],
+            "ulimits": [],
+            "logConfiguration": {
+                "logDriver": "awslogs",
+                "options": {
+                    "awslogs-create-group": "true",
+                    "awslogs-group": "/ecs/goals",
+                    "awslogs-region": "ap-northeast-2",
+                    "awslogs-stream-prefix": "ecs"
+                },
+                "secretOptions": []
+            }
+        }
+    ],
+    "taskRoleArn": "arn:aws:iam::2819생략263:role/ecsTaskExecutionRole",
+    "executionRoleArn": "arn:aws:iam::2819생략263:role/ecsTaskExecutionRole",
+    "networkMode": "awsvpc",
+    "requiresCompatibilities": [
+        "FARGATE"
+    ],
+    "cpu": "1024",
+    "memory": "3072",
+    "runtimePlatform": {
+        "cpuArchitecture": "X86_64",
+        "operatingSystemFamily": "LINUX"
+    }
+}
+```
+
+- frontend(goals-react)
+{
+    "family": "goals-react",
+    "containerDefinitions": [
+        {
+            "name": "goals-react",
+            "image": "nasir17/goals-react",
+            "cpu": 0,
+            "portMappings": [
+                {
+                    "name": "goals-react-80-tcp",
+                    "containerPort": 80,
+                    "hostPort": 80,
+                    "protocol": "tcp",
+                    "appProtocol": "http"
+                }
+            ],
+            "essential": true,
+            "environment": [],
+            "environmentFiles": [],
+            "mountPoints": [],
+            "volumesFrom": [],
+            "ulimits": [],
+            "logConfiguration": {
+                "logDriver": "awslogs",
+                "options": {
+                    "awslogs-create-group": "true",
+                    "awslogs-group": "/ecs/goals-react",
+                    "awslogs-region": "ap-northeast-2",
+                    "awslogs-stream-prefix": "ecs"
+                },
+                "secretOptions": []
+            }
+        }
+    ],
+    "taskRoleArn": "arn:aws:iam::2중간생략3:role/ecsTaskExecutionRole",
+    "executionRoleArn": "arn:aws:iam::2중간생략3:role/ecsTaskExecutionRole",
+    "networkMode": "awsvpc",
+    "requiresCompatibilities": [
+        "FARGATE"
+    ],
+    "cpu": "1024",
+    "memory": "3072",
+    "runtimePlatform": {
+        "cpuArchitecture": "X86_64",
+        "operatingSystemFamily": "LINUX"
+    }
+}
