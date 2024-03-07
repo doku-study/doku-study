@@ -7,22 +7,22 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: second-app-deployment
-  # selector가 있어야 에러가 안 난ㄴ다
+  # selector가 있어야 에러가 안 난다
   selector:
-		matchLabels:
-			app: second-app
-			tier: backend
+    matchLabels:
+      app: second-app
+      tier: backend
 spec:
-	// 동시에 실행하고자 하는 pod 갯수
+  // 동시에 실행하고자 하는 pod 갯수
   replicas: 3
-	// pod의 정의, 언제나 pod에 대한 것을 가리킨다
+  // pod의 정의, 언제나 pod에 대한 것을 가리킨다
   template:
     metadata:
       labels:
-				// deployment, depl, tier 등 원하는 이름으로 네이밍 가능
+        // deployment, depl, tier 등 원하는 이름으로 네이밍 가능
         app: second-app
         tier: backend
-		// 각 pod에 대한 spec
+    // 각 pod에 대한 spec
     spec:
       containers:
       - name: second-node
@@ -45,14 +45,14 @@ apiVersion: apps/v1
 kind: Deployment
 # ...
 spec:
-# ...
+  # ...
   selector:
-	  matchExpressions:
-			- {key: app, operator: In,values: [second-app, first-app]}
+    matchExpressions:
+      - { key: app, operator: In, values: [second-app, first-app] }
   template:
     metadata:
       labels:
-				app: second-app
+        app: second-app
         tier: backend
     # ...
 ```
@@ -72,15 +72,15 @@ kubectl get deployments
 apiVersion: v1
 kind: Service
 metadata:
-	name: backend
+  name: backend
 spec:
-	selector:
-		app: second-app
-	ports:
-		- protocol: 'TCP'
-			port: 80
-			targetPort: 8080
-	type: LoadBalancer
+  selector:
+    app: second-app
+  ports:
+    - protocol: "TCP"
+      port: 80
+      targetPort: 8080
+  type: LoadBalancer
 ```
 
 ```bash
@@ -103,15 +103,15 @@ kubectl delete -f=deployment.yaml -f=service.yaml
 apiVersion: v1
 kind: Service
 metadata:
-	name: backend
+  name: backend
 spec:
-	selector:
-		app: second-app
-	ports:
-		- protocol: 'TCP'
-			port: 80
-			targetPort: 8080
-	type: LoadBalancer
+  selector:
+    app: second-app
+  ports:
+    - protocol: "TCP"
+      port: 80
+      targetPort: 8080
+  type: LoadBalancer
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -120,16 +120,16 @@ metadata:
 spec:
   # 동시에 실행하고자 하는 pod 갯수
   replicas: 3
-	selector:
-		matchLabels:
-			app: second-app
-			tier: backend
+  selector:
+    matchLabels:
+      app: second-app
+      tier: backend
   # pod의 정의, 언제나 pod에 대한 것을 가리킨다
   template:
     metadata:
       labels:
         app: second-app
-				tier: backend
+        tier: backend
     # 각 pod에 대한 spec
     spec:
       containers:
@@ -153,8 +153,8 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: second-app-deployment
-	labels:
-		group: example
+  labels:
+    group: example
 spec:
   replicas: 3
   selector:
@@ -170,7 +170,6 @@ spec:
       containers:
         - name: second-node
           image: blcklamb/kub-first-app:2
-
 ```
 
 ```yaml
@@ -204,13 +203,12 @@ spec:
       containers:
         - name: second-node
           image: blcklamb/kub-first-app:2
-					livenessProbe:
-						httpGet:
-							path: /
-							port: 8080
-						periodSeconds: 10
-						initialDelaySeconds: 5
-
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            periodSeconds: 10
+            initialDelaySeconds: 5
 ```
 
 [Configure Liveness, Readiness and Startup Probes](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/)
