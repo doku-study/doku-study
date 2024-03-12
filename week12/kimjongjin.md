@@ -227,6 +227,7 @@ deployment의 spec 대신, 별도의 리소스에 K-V를 할당하여 가져다 
   - folder: 'story' 와 같은 K-V 추가
 
 ```
+# environment.yaml
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -267,6 +268,58 @@ k8s 환경에서는 여러 노드에서 컨테이너가 실행되기 때문에 �
 ---
 
 ![Dynamic provisioning](https://blog.kakaocdn.net/dn/NM0QS/btrCKWA4o00/93TqcdRJV06ln0aas0iT21/img.png)    
-[링크](https://happycloud-lee.tistory.com/256)
+[Dynamic provisioning](https://happycloud-lee.tistory.com/256)
 
+---
+```
+# deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: story-deployment
+spec: 
+  replicas: 2
+  selector:
+    matchLabels:
+      app: story
+  template:
+    metadata:
+      labels:
+        app: story
+    spec:
+      containers:
+        - name: story
+          image: nasir17/kub-data-demo:2
+          env:
+            - name: STORY_FOLDER
+              valueFrom: 
+                configMapKeyRef:
+                  name: data-store-env
+                  key: folder
+          volumeMounts:
+            - mountPath: /app/story
+              name: story-volume
+      volumes:
+        - name: story-volume
+          persistentVolumeClaim:
+            claimName: host-pvc
+```
 
+```
+# service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: story-service
+spec:
+  selector: 
+    app: story
+  type: LoadBalancer
+  ports:
+    - protocol: "TCP"
+      port: 80
+      targetPort: 3000
+```
+
+- GET: `curl $(minikube service story-service --url)/story`
+- POST: `curl -X POST -H "Content-Type: application/json" -d '{"text": "My Text!\n"}' $(minikube service story-service --url)/story`
