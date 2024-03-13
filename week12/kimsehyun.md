@@ -1,4 +1,15 @@
 
+## 210~213. Kubernetes에서 볼륨은 왜 필요한가? state란 무엇인가?
+
+- 컨테이너는 프로세스다.
+- 즉, 어떤 고정된 데이터가 아니라 stateless한 대상이라고 볼 수 있다.
+- 그래서 컨테이너에 볼륨이라는, state가 존재하는 객체를 결합해서 사용하는 것이다.
+
+강의에서 말하는 state란? 
+- 앱 내에서 생성되는 데이터지만, 컨테이너를 중지, 삭제하면서 같이 날아가면 안되는 데이터다.
+- 유저의 계정 정보, 유저가 업로드한 기록 등
+- 데이터베이스에 저장되어야 하는 데이터
+
 ## 214~215. emptyDir 타입과 hostPath 타입의 볼륨
 
 ### emptyDir 볼륨의 정의
@@ -10,12 +21,19 @@
         - name: story
           image: academind/kub-data-demo:1
           volumeMounts:
+	        # 컨테이너 내부에서 어느 경로에 볼륨이 마운트될지를 결정
             - mountPath: /app/story
               name: story-volume
       volumes:
         - name: story-volume
           emptyDir: {}
 ```
+
+- emptyDir은 기본적으로 pod-specific하다. 이 말인즉슨 한 pod는 하나의 emptyDir 볼륨을 가지고 있다는 뜻이다. 
+- 만약 배포하고자 하는 앱의 pod replica가 여러 개라면, 하나의 replica에 있는 emptyDir 볼륨에 있는 데이터는 다른 replica에서 접근이 불가능해진다.
+- emptyDir 볼륨은 pod가 매번 새로 시작할 때마다 빈 디렉토리를 생성한다. 하지만 pod를 이루는 컨테이너가 새로 시작한다고 해서 볼륨이 초기화되는 건 아니다. pod가 살아있는 한 (컨테이너가 replace되거나 재시작해도) emptyDir 볼륨 내 데이터는 그대로 유지된다.
+- emptyDir로 명시만 하면 알아서 디폴트 옵션으로 지정한다.
+
 
 ### hostPath 볼륨의 정의
 
@@ -31,9 +49,17 @@
       volumes:
         - name: story-volume
           hostPath:
+            # 여기서 path는 host machine의 경로다. 어디에 데이터를 저장할지 지정
             path: /data
+            # DirectoryOrCreate: 존재하지 않는다면 directory를 만든다.
             type: DirectoryOrCreate
 ```
+
+- 앞서 살펴본 emptyDir 볼륨은, 볼륨 자체가 하나의 pod에만 종속되어 있기 때문에 pod가 죽으면 볼륨의 내용도 같이 사라져버린다는 치명적인 단점이 있었다.
+- 이걸 개선하고자 한 게 hostPath라고 할 수 있다. hostPath 볼륨은 말 그대로 host machine(node)에 경로를 지정해서 node 안의 여러 개의 pod가 공유할 수 있도록 한다.
+- host path가 이미 데이터를 가지고 있다면 컨테이너에서 바로 접근이 가능하다(어떻게 보면 편리한?).
+- 도커 컨테이너에서 마치 bind mount 같은 역할을 한다. `hostPath` 는 host machine 상의 경로를 컨테이너에 bind해준다.
+
 
 ## 216. "CSI" 볼륨이란?
 
@@ -77,6 +103,8 @@ CSI는 사실 지금처럼 MiniKube로 로컬에서 테스트하고 데모 프�
 - `hostPath` Minikube 같은 단일 노드 환경에선 데이터를 유지시킬 수 있을진 몰라도, 멀티 노트 환경에선 소용없다.
 - 실제 배포 환경(AWS 같은)에서는 `hostPath` 으로 설정한 볼륨은 pod랑 노드에 종속되기 때문에 소용없다. 
 - 물론 데이터의 성격마다 다르다. 유저의 로그 데이터?는 pod가 삭제되면 같이 없어져도 무방하지만, 유저의 계정 정보 등은 pod가 삭제돼도 유지되어야 한다.
+
+컨테이너는 프로세스다. 즉 stateless한 대상이고, 데이터처럼 지속적으로 저장되는 것이 아니다.
 
 ### 영구 볼륨(Persistent Volume)의 특징
 
