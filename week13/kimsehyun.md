@@ -12,12 +12,18 @@
 ---
 ## 227. 프로젝트 소개
 
-실습 코드는 크게 세 가지로 나뉜다.
+실습 코드는 크게 세 가지로 나뉜다. 
+참고로 이 강의가 웹 개발 강의가 아니다보니까 친절하게 설명해주진 않는데, 웹 개발을 아예 모르는 나로선 뭐가 뭔지 모르고 무작정 실습으로 뛰어드는 느낌이라 처음에 많이 헤맸던 것 같다. 이 부분이 좀 아쉽다.
 
-1. users-api: 사용자의 정보
-2. auth-api: 권한, 토큰 부여
-3. tasks-api: 
+1. users-api: 사용자가 로그인하고 회원가입하는 부분.
+2. auth-api: 사용자가 접속할 권한을 부여하는 부분.
+3. tasks-api: to-do 앱이라고 했을 때, 내 '할 일(task)'을 등록하는 메인 기능.
 
+(참고용: 출처: https://medium.com/@ratrosy/authorization-and-authentication-in-api-services-9b4db295a35b)
+![[user_auth_api.png | 500]]
+
+
+### 실습 프로젝트 구조도
 
 ![[Pasted image 20240319101456.png]]
 
@@ -590,10 +596,173 @@ kubectl apply -f=users-deployment.yaml
 -> 일반적으로 도메인이 가장 편리하다. 도메인 이름을 기억하기도 쉽고, 추가하기도 쉬우며, pod가 재생성되거나 위치가 바뀌어도 도메인을 한번 지정해주면 k8s가 자동으로 pod에 연결해주기 때문
 
 ---
-
 ## 236.  챌린지 솔루션
 
+이제 tasks API를 건드려보자.
 
+```javascript
+// tasks-app.js 20번째 줄
+const response = await axios.get('http://auth/verify-token/' + token);
+```
+
+를
+
+```javascript
+// tasks-app.js
+const response = await axios.get(`http://${process.env.AUTH_ADDRESS}/verify-token/` + token);
+```
+
+로 바꾸고, docker-compose.yaml를 변경한다.
+
+```yaml
+# docker-compose.yaml
+...
+environment:
+    TASKS_FOLDER: tasks
+    AUTH_ADDRESS: auth
+```
+
+그리고 tasks-deployment.yaml 파일과 tasks-service.yaml을 새로 생성한다.
+name과 selector 모두 task로 설정하고, 타입을 LoadBalancer로 설정한다.
+
+```yaml
+# tasks-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tasks-deployment
+spec:
+  replicas: 1
+  selector: 
+    matchLabels:
+      app: tasks
+  template:
+    metadata:
+      labels:
+        app: tasks
+    spec:
+      containers:
+        - name: tasks
+          image: my_docker_hub_id/kub-demo-tasks:latest
+          env:
+            - name: AUTH_ADDRESS
+              # value: localhost
+              # value: "10.97.193.196"
+              value: "auth-service.default"
+```
+
+```yaml
+# tasks-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: tasks-service
+spec:
+  selector:
+    app: tasks
+  type: LoadBalancer
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 8080
+```
+
+kud-demo-tasks라는 리포지토리를 Docker Hub에 생성하고,
+
+```bash
+cd tasks-api
+docker build -t my_docker_hub_id/kub-demo-tasks .
+docker push my_docker_hub_id/kub-demo-tasks
+```
+
+그리고 
+
+```bash
+cd ../kubernetes
+kubectl apply -f=tasks-service.yaml -f=tasks-deployment.yaml
+```
+
+이렇게 하면 당연히 에러가 난다. 왜? `TASKS_FOLDER` 환경변수를 deployment 파일에 추가하지 않았기 때문.
+Docker-compose 파일 보면
+
+```yaml
+# docker-compose.yaml
+...
+  tasks:
+    build: ./tasks-api
+    ports: 
+      - "8000:8000"
+    environment:
+      TASKS_FOLDER: tasks
+```
+
+환경변수를 `TASKS_FOLDER: tasks` 요렇게 설정해놓았다. 그러니까 tasks-deployment.yaml의 container spec에도 추가해줘야 한다.
+
+```yaml
+# tasks-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tasks-deployment
+spec:
+  replicas: 1
+  selector: 
+    matchLabels:
+      app: tasks
+  template:
+    metadata:
+      labels:
+        app: tasks
+    spec:
+      containers:
+        - name: tasks
+          image: my_docker_hub_id/kub-demo-tasks:latest
+          env:
+            - name: AUTH_ADDRESS
+              # value: localhost
+              # value: "10.97.193.196"
+              value: "auth-service.default"
+            - name: TASKS_FOLDER
+              value: tasks
+```
+
+그러고 나서 다시 적용해서
+
+```bash
+kubectl apply -f=tasks-service.yaml -f=tasks-deployment.yaml
+```
+
+deployment랑 pod를 확인해보면 에러 없이 잘 실행된 걸 확인할 수 있다.
+
+```bash
+kubectl get deployments
+kubectl get pods
+```
+
+이제 tasks-service에 request 보낼 외부 IP 주소를 알아내자.
+
+```bash
+minikube service tasks-service
+```
+
+그 다음에 PostMan에서 Authorization 헤더 (값: `Bearer abc`) 추가하는 걸 잊지 말자.
+Body에는 raw로 설정하고
+
+```json
+{
+	"text": "Tasks loaded",
+	"title": "Do this, too!"
+}
+```
+
+해서 POST로 요청을 보내면 task를 하나 등록 -> GET으로 다시 받아보자. 잘 받는 걸 확인할 수 있다.
+
+### 확인한 것
+
+![[Pasted image 20240320202444.png]]
+
+1. tasks API를 별도의 pod에 운영하기 위해 tasks-deployment.yaml, tasks-service.yaml로 별도의 deployment와 service를 만들었고
+2. Users API로 Auth API에 접근하기 위해,  AUTH_ADDRESS
 
 
 ---
@@ -717,3 +886,138 @@ docker run -p 80:80 --rm -d my_docker_hub_id/kub-demo-frontend
 
 ---
 
+## 238. Kubernetes로 프론트엔드 배포하기
+
+이미 프론트엔드 코드가 있고 Dockerfile로도 만들어져 있으니, 이걸 그대로 pod에 옮기기만 하면 된다.
+그리고 어느 한 컨테이너와 밀접히 묶여있는(tightly coupled) 상태가 아니기 때문에, 별도의 pod로 생성하기로 하자.
+
+- frontend 기능을 위한 별도의 deployment, service 파일 만들기
+- frontend에서 당연히 어떤 요청을 다른 API에 보낼 거라고 전제
+
+### frontend-deployment.yaml, frontend-service.yaml 만들기
+
+우선 users-deployment.yaml에서 내용을 그대로 복사해오고, 일부 name과 label 등을 수정한다.
+
+```yaml
+# frontend-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend-deployment
+spec:
+  replicas: 1
+  selector: 
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+        - name: frontend
+          image: my_docker_hub_id/kub-demo-frontend:latest
+          env:
+            - name: AUTH_ADDRESS
+              value: "auth-service.default"
+```
+
+service를 만드는 이유 -> frontend API는 "public facing"해야 하기 때문(웹 애플리케이션의 프론트엔드는 당연히 외부에서 접근할 수 있어야 함)
+
+```yaml
+# frontend-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-service
+spec:
+  selector:
+    app: frontend
+  type: LoadBalancer
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+```
+
+nginx.conf에도, Dockerfile에도 port 번호는 80라고 나와있기 때문에 8080에서 80로 포트번호를 바꿔준다.
+
+그 다음에 
+
+Docker Hub 가서 kub-demo-frontend 리포지토리 생성한 후 이미지를 push한다.
+
+```bash
+docker push my_docker_hub_id/kub-demo-frontend
+```
+
+그리고 이제 적용한다.
+
+```bash
+cd kubernetes
+kubectl apply -f=frontend-service.yaml -f=frontend-deployment.yaml
+```
+
+```bash
+minikube service frontend-service
+```
+
+로 URL 받은 다음에 웹브라우저에 입력하면 웹 애플리케이션이 잘 작동하는 걸 볼 수 있다.
+
+
+### 하지만 여전히 해결되지 않은 문제
+
+app.js에 보면
+
+```javascript
+function addTaskHandler(task) {
+    fetch('http://192.168.99.100:32140/tasks', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: 'Bearer abc',
+      },
+      body: JSON.stringify(task),
+    })
+```
+
+IP 주소가 하드코딩되어 있다. 물론 cloud provider를 쓰면 고정 IP 주소를 얻을 수 있긴 하지만 그래도 여전히 찜찜(?)하다.
+
+
+---
+
+## 239. 리버스 프록시 사용하기
+
+- 프론트엔드를 담당하는 서버 그 자신(nginx 서버)으로 요청을 보내는 것.
+
+```conf
+server {
+  listen 80;
+
+  location /api {
+    proxy_pass http://192.168.99.100:32140;
+  }
+
+  location / {
+    root /usr/share/nginx/html;
+    index index.html index.htm;
+    try_files $uri $uri/ /index.html =404;
+  }
+  
+  include /etc/nginx/extra-conf.d/*.conf;
+}
+```
+
+
+```javascript
+function addTaskHandler(task) {
+    fetch('/api/tasks', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: 'Bearer abc',
+      },
+      body: JSON.stringify(task),
+    })
+```
+
+`fetch('/api/tasks', ...` -> /api/라고 명시했으니, `http://192.168.99.100:32140`로 대신 포워딩한다?
