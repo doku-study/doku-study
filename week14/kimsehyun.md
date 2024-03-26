@@ -115,9 +115,7 @@ aws eks --region us-east-1 update-kubeconfig --name kub-dep-demo
 ```
 
 
----
-
-### 노드 그룹 추가하기
+### 3. 노드 그룹 추가하기
 
 EKS 서비스 화면으로 다시 돌아가서, 생성한 클러스터를 클릭한 다음 Compute 메뉴로 들어간다.
 
@@ -158,19 +156,19 @@ AMI Type은 Amazon Linux 2 (AL2_x86_64), Capacity Type은 On-demand로 지정해
 그리고 인스턴스 타입 검색창에 t3를 입력해서 t3.small (스펙을 더 키울 수 있지만 데모 프로젝트용이라 작게 설정한다)을 찾아 클릭한다.
 Disk size는 20GiB default로 그대로 설정한다.
 
-### 노드 스케일링
+### 4. 노드 스케일링
 - 노드 1대 = 물리적인 컴퓨터 1대
 - 노드 수가 많을수록 pod를 새로 생성해서 할당할 수 있는 노드도 넉넉한 셈이다. 하지만 노드 수를 늘리면 당연히 그만큼 유지 비용은 증가한다.
 - node minimum, maximum, desired 사이즈 모두 2개로 유지하자
 
 
-### 네트워크 설정
+### 5. 네트워크 설정
 Node group network configuration
 - Subnet은 건드리지 않는다
 - Config remote access to nodes: 외부에서 클러스터의 EC2 인스턴스를 SSH로 직접 연결할 수 있게 설정할 것인가? No (k8s가 알아서 관리하게 둔다)
 
 
-### 알아서 생성된 인스턴스, 그리고 로드 밸런서
+### 6. 알아서 생성된 인스턴스, 그리고 로드 밸런서
 
 AWS 콘솔에서 EC2 메뉴로 들어가보자. 그럼 EKS 클러스터 생성 덕분에(?) 자동으로 인스턴스도 새로 생긴 것을 볼 수 있다.
 
@@ -226,8 +224,6 @@ https://docs.aws.amazon.com/eks/latest/userguide/create-kubeconfig.html
 ![[2024-03-26_10-09-30.png]]
 
 
----
-
 이제 kubectl로 다시 클러스터를 확인해보자.
 
 ![[2024-03-26_13-25-51.png]]
@@ -243,6 +239,243 @@ kubectl apply -f=auth.yaml -f=users.yaml
 
 ![[2024-03-26_13-30-55.png]]
 
+
+그러고 나서 `kubectl get pods` 명령어 실행하면
+
+![[2024-03-26_13-58-02.png]]
+
+### CrashLoopBackOff로 pod가 비정상 종료, 실행을 반복
+
+kubectl describe pods 명령어로 pod 상태를 확인했을 때, Exit Code가 1이었다.
+-> 이미지 빌드 및 푸쉬를 제대로 했는지 확인
+
+로그 확인했을 때, 다음과 같은 명령어: 
+
+![[2024-03-26_14-27-54.png]]
+
+맥북 M1이라서 그런 건가? docker-compose.yaml 파일에 plaftorm을 linux/amd64로 추가해보고 다시 docker compose up 하면
+
+```yaml
+version: "3"
+services:
+  auth:
+    build: ./auth-api
+    ports:
+      - '8000:3000'
+    environment:
+      TOKEN_KEY: 'shouldbeverysecure'
+    platform: linux/amd64
+  users:
+    build: ./users-api
+    ports:
+      - '8080:3000'
+    environment:
+      MONGODB_CONNECTION_URI: 'mongodb+srv://maximilian:wk4nFupsbntPbB3l@cluster0.ntrwp.mongodb.net/users?retryWrites=true&w=majority'
+      AUTH_API_ADDRESSS: 'auth:3000'
+    platform: linux/amd64
+```
+
+아래 메시지와 함께 compose up이 되지 않는다.
+
+```
+docker compose up -d --build
+# image with reference kub-deploy-01-starting-setup-auth was found but does not # match the specified platform: wanted linux/amd64, actual: linux/arm64/v8
+```
+
+또는 Dockerfile에 FROM 명령어 뒤에 platform 정보를 추가하고, Node 버전을 바꾸어도 동일한 에러가 발생한다.
+
+```dockerfile
+# users-api/Dockerfile
+FROM --platform=linux/amd64 node:11.15
+
+WORKDIR /app
+
+COPY package.json .
+
+RUN npm install
+
+COPY . .
+
+EXPOSE 3000
+
+CMD [ "node", "users-app.js" ]
+```
+
+결과적으로 동일한 에러 발생한다. 
+
+### 시도 1
+Docker Desktop에서 Settings > Features in Development > Use Rosetta for x86/amd64 emulation on Apple Silicon 체크박스 선택
+그 후 docker-compose.yaml의 각 service 아래 `--platform: linux/amd64`를 추가
+
+![[2024-03-26_16-20-37.png]]
+
+
+![[2024-03-26_16-22-44.png]]
+
+-> 현재 이미지는 AMD64 기반으로 생성이 되었다.
+
+1. docker compose로 생성된 이미지 이름을, auth.yaml과 users.yaml에 저장한 대로 변경한다.
+
+```bash
+docker image tag kub-deploy-01-starting-setup-auth seanshnkim27/kub-dep-auth:v1
+docker image tag kub-deploy-01-starting-setup-users seanshnkim27/kub-dep-users:v1
+```
+
+2. 이미지를 Docker Hub에 push한다.
+```bash
+docker push seanshnkim27/kub-dep-auth:v1
+docker push seanshnkim27/kub-dep-users:v1
+```
+
+3. kubernetes 폴더로 다시 들어가서 구성 파일을 적용한다.
+```bash
+kubectl delete -f=users.yaml -f=auth.yaml
+# ... 삭제되는 것 기다린 다음
+kubectl apply -f=users.yaml -f=auth.yaml
+```
+
+-> 여전히 동일 에러 발생
+
+기존 amd64 노드를 삭제하고, 새로 그룹 생성해봐도 동일 에러 발생
+
+---
+### 쿠버네티스 클러스터는 Minikube와 EKS에서 동일하게 동작한다
+1. Postman으로 EKS 클러스터의 노드에 POST, GET 요청을 보내거나
+2. k8s 구성 파일(users.yaml)에 replica 수를 변경한 후, `kubectl apply -f=users.yaml` 명령어를 실행하면 pod 수가 늘어난 것을 확인
+3. CoreDNS (`auth-service.default`)도 문제없이 잘 작동
+
+-> 그게 Kubernetes의 작동 방식이기 때문. 똑같은 구성 파일이라면, 어느 서비스 플랫폼에서 작동시키든 동일하게 작동해야 한다.
+
+---
+## 251~252. 볼륨 생성
+
+- persistent volume claim
+- CSI(Container Storage Interface)
+
+```bash
+kubectl apply -k "github.com/kubernetes-sigs/aws-efs-csi-driver/deploy/kubernetes/overlays/stable/?ref=release-1.7"
+```
+
+결과 창
+
+```
+# Warning: 'bases' is deprecated. Please use 'resources' instead. Run 'kustomize edit fix' to update your Kustomization automatically.
+serviceaccount/efs-csi-controller-sa created
+serviceaccount/efs-csi-node-sa created
+clusterrole.rbac.authorization.k8s.io/efs-csi-external-provisioner-role created
+clusterrole.rbac.authorization.k8s.io/efs-csi-external-provisioner-role-describe-secrets created
+clusterrole.rbac.authorization.k8s.io/efs-csi-node-role created
+rolebinding.rbac.authorization.k8s.io/efs-csi-provisioner-binding-describe-secrets created
+clusterrolebinding.rbac.authorization.k8s.io/efs-csi-node-binding created
+clusterrolebinding.rbac.authorization.k8s.io/efs-csi-provisioner-binding created
+deployment.apps/efs-csi-controller created
+daemonset.apps/efs-csi-node created
+csidriver.storage.k8s.io/efs.csi.aws.com configured
+```
+
+
+### 보안 그룹 생성
+EC2 메뉴 > Security Groups > Create security group 클릭
+- VPC는 default가 아니라 EKS 클러스터 전용으로 만든 VPC를 선택해야 한다(이전 강의에서 클러스터 생성할 때 이미 만들어두었다).
+- security group name 설정한다. (`eks-efs`)
+- Inbound rules를 추가한다. Add rule > Type에 NFS로 설정한다. Source는 Custom, IP 주소에 EKS의 VPC IPv4 CIDR을 입력한다. (`192.168.0.0/16`)
+- outbound rules는 0.0.0.0/0으로 그대로 놔둔다.
+
+### EFS(Elastic File System) 생성
+그리고 EFS 화면으로 가서, 'create file system'을 클릭한다.
+Step 1. File System Settings에서는 건드릴 게 없다. Next를 눌러서 Step 2. Network Access 설정으로 넘어간다.
+
+1. VPC: 마찬가지로 VPC는 EKS 클러스터용 VPC를 선택한다.
+2. Mount targets의 security group: default가 아니라, 방금 전에 만든 security group으로 바꿔야 한다.
+3. 그 다음에 next next 계속 클릭해서 생성한다.
+
+![[2024-03-26_17-55-38.png]]
+
+4. 다 만들었으면, 만든 File system ID를 복사해놓는다.
+
+fs-0626f455f454c2118
+
 ---
 
+## 253. EFS persistent volume 만들기
+
+persistent volume을 EFS cluster에 반영하기 위해 users.yaml 위에 다음 내용을 추가한다.
+
+```yaml
+# users.yaml
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: efs-pv
+spec:
+  capacity:
+    storage: 5Gi
+    volumeMode: Filesystem
+    accessModes:
+      - ReadWriteAny
+    storageClassName: efs-sc
+    csi:
+      driver: efs.csi.aws.com
+      volumeHandle: fs-0626f455f454c2118
+---
+```
+
+storage class를 명시하기 위해 static provisioning(정확히 이게 무슨 개념?)을 참고하자. [깃허브 링크](https://github.com/kubernetes-sigs/aws-efs-csi-driver/tree/master/examples/kubernetes/static_provisioning) 
+
+아래는 specs 폴더에 storageclass.yaml 파일 내용을 그대로 복사해온 것이다.
+
+```yaml
+# users.yaml
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: efs-sc
+provisioner: efs.csi.aws.com
+```
+
+persistentVolumeClaim을 추가한다.
+
+```yaml
+# users.yaml
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: efs-pvc
+spec:
+  access:
+    - ReadWriteMany
+  storageClassName: efs-sc
+  resources:
+    requests:
+      storage: 5Gi
+---
+```
+
+containers와 동일 레벨에서 volumes 정보를 아래처럼 추가한다.
+
+```yaml
+# users.yaml
+...
+	spec:
+	  containers:
+	    ...
+	  volumes:
+	    - name: efs-pv
+	      persistentVolumeClaim:
+			claimName: efs-pvc
+```
+
+```yaml
+# users.yaml
+    spec:
+      containers:
+        ...
+          env:
+            ...
+          volumeMounts:
+            - name: efs-pv
+              # 그래서 미리 로컬 폴더에 users 폴더를 만들어놓아야 함
+              mountPath: /app/users
+```
 
