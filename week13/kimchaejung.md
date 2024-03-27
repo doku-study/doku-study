@@ -238,11 +238,14 @@ server {
 
 ## CORS?
 
-<!-- 추가 예정 -->
+Cross-Origin Resource Sharing(교차 출처 리소스 공유)
+
+SOP(Same-Origin Policy): 같은 출처에서만 리소스를 공유할 수 있는 정책
+CORS 정책을 지킨 리소스 요청은 출처가 다르더라도 허용한다.
 
 ## 리버스 프록시?
 
-<!-- 추가 예정 -->
+특정 URL로 보내는 요청에 대해 브라우저는 다른 출처로 보낸 것으로 알고 있지만 웹팩/nginx로 동일 출처로 요청을 프록싱하게 만들 수 있다. 이를 통해 CORS 정책을 우회할 수 있다.
 
 정적 IP는 Local machine에서 사용할 때 바라보는 주소이다. 리버스 프록시로 프론트 애플리케이션을 브라우저가 아니라 컨테이너 내에서 돌리는 것으로 만들었기 때문에 해당 IP는 작동하지 않고 기본으로 제공해주는 주소를 사용할 수 있다. 포트 번호도 잊지 말기!
 
@@ -253,6 +256,6 @@ server {
 
 # 느낀 점
 
-1. 여러 command 자동화 alias 처리
+- 여러 command 자동화 alias 처리
 
-   네트워크 실습하면서 프로젝트 코드 변경 후 docker 빌드 -> docker push -> kubectl deployment 삭제 -> kubectl deployment apply 이 네 개의 command가 고정 반복이 되는 걸 알 수 있었다. image 이름을 label처럼 지정하고 yaml 파일 이름도 `{{IMAGE_NAME}}-deployment.yaml` 이렇게 컨벤션을 둔다면 alias로 지정해서 한 command로 파이프라인을 만드는 것도 가능하지 않을까?
+  네트워크 실습하면서 프로젝트 코드 변경 후 docker 빌드 -> docker push -> kubectl deployment 삭제 -> kubectl deployment apply 이 네 개의 command가 고정 반복이 되는 걸 알 수 있었다. image 이름을 label처럼 지정하고 yaml 파일 이름도 `{{IMAGE_NAME}}-deployment.yaml` 이렇게 컨벤션을 둔다면 alias로 지정해서 한 command로 파이프라인을 만드는 것도 가능하지 않을까?
