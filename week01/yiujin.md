@@ -39,4 +39,12 @@
 도커 엔진 기반으로 컨테이너 실행  
 이 컨테이너 안에는 작은 운영체제 레이어는 있을 수 있지만 가상머신에 비해 훨씬 가벼움  
 
-
+## 실습
+도커를 사용해서 로컬에 node를 설치하지 않아도 node로 동작하는 어플리케이션 제작 가능  
+> FROM node:14  
+WORKDIR /app  
+COPY package.json .  
+RUN npm install  
+COPY . .  
+EXPOSE 3000  
+CMD [ "node", "app.mjs" ]  
