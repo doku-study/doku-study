@@ -20,8 +20,8 @@ minikube 활용
 - API Server, kubelet, kube-proxy 등 k8s 필요 서비스 및 노드 구성
 - 설정된 환경의 리소스 사전 설정 (로드밸런서, 볼륨 등)
 
-\> 쿠버네티스는 인프라를 관리하지 않는다 재확인
-\> 관리형 서비스를 사용하면 알아서 다해준다 재확인
+\> 쿠버네티스는 인프라를 관리하지 않는다 재확인    
+\> 관리형 서비스를 사용하면 알아서 다해준다 재확인    
 
 ## AWS EKS vs AWS ECS
 - EKS: Elastic Kubernetes Service
@@ -126,7 +126,14 @@ spec:
   resources:
     requests:
       storage: 5Gi
----
+```
+
+StorageClass 생성
+- [example의 storageclass.yaml](https://github.com/kubernetes-sigs/aws-efs-csi-driver/blob/master/examples/kubernetes/static_provisioning/specs/storageclass.yaml) 생성
+
+deployment 수정
+- 기존 users.yaml에 volume 설정 추가
+```
 spec:
   template:
     spec:
@@ -141,13 +148,6 @@ spec:
             claimName: efs-pvc
 ```
 
-StorageClass 생성
-- [example의 storageclass.yaml](https://github.com/kubernetes-sigs/aws-efs-csi-driver/blob/master/examples/kubernetes/static_provisioning/specs/storageclass.yaml) 생성
-
-deployment 수정
-- 기존 users.yaml에 volume 설정 추가
-```
-```
 ## EFS 볼륨 사용하기
 users-api source 업데이트
 - 로그 조회 및 저장기능 업데이트: GET, /logs
@@ -167,6 +167,7 @@ task-api 추가
  
 ## 챌린지 솔루션
 task docker image build
+- task-app.js의 L36에도   { useNewUrlParser: true, useUnifiedTopology: true }, 설정 추가
 - sudo docker build . -t nasir17/kub-dep-tasks:latest && docker push nasir17/kub-dep-tasks:latest && kubectl rollout restart -f ../kubernetes
 
 task.yaml
@@ -229,7 +230,8 @@ spec:
   - {"message": "You are not authorized to delete this task."}
   - ?? 머지 인증에서 꼬인건가
   - 아니면 지난번 강의때 tasks디렉토리 만들고 파일저장하는부분 때문에?흠
+![2024-04-03 03 39 36](https://github.com/doku-study/doku-study/assets/102286363/55e1d260-aa08-46b0-af1c-f68691adf0f8)
 
-sudo docker build . -t nasir17/kub-dep-users:latest && docker push nasir17/kub-dep-users:latest && kubectl rollout restart -f ../kubernetes
-sudo docker build . -t nasir17/kub-dep-auth:latest && docker push nasir17/kub-dep-auth:latest && kubectl rollout restart -f ../kubernetes
-sudo docker build . -t nasir17/kub-dep-tasks:latest && docker push nasir17/kub-dep-tasks:latest && kubectl rollout restart -f ../kubernetes
+sudo docker build . -t nasir17/kub-dep-users:latest && docker push nasir17/kub-dep-users:latest && kubectl rollout restart -f ../kubernetes    
+sudo docker build . -t nasir17/kub-dep-auth:latest && docker push nasir17/kub-dep-auth:latest && kubectl rollout restart -f ../kubernetes    
+sudo docker build . -t nasir17/kub-dep-tasks:latest && docker push nasir17/kub-dep-tasks:latest && kubectl rollout restart -f ../kubernetes    
